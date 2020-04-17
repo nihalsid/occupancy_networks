@@ -84,7 +84,7 @@ class Shapes3dDataset(data.Dataset):
 
             split_file = os.path.join(subpath, split + '.lst')
             with open(split_file, 'r') as f:
-                models_c = f.read().split('\n')
+                models_c = [x.strip() for x in f.read().split('\n') if x.strip() != ""]
             
             self.models += [
                 {'category': c, 'model': m}
