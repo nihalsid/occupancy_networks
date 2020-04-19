@@ -126,6 +126,7 @@ def get_dataset(mode, cfg, return_idx=False, return_category=False):
         'train': cfg['data']['train_split'],
         'val': cfg['data']['val_split'],
         'test': cfg['data']['test_split'],
+        'vis': cfg['data']['vis_split'],
     }
 
     split = splits[mode]
@@ -186,6 +187,10 @@ def get_inputs_field(mode, cfg):
 
     if input_type is None:
         inputs_field = None
+
+    elif input_type == 'sdf':
+        inputs_field = data.SDFPointField()
+
     elif input_type == 'img':
         if mode == 'train' and cfg['data']['img_augment']:
             resize_op = transforms.RandomResizedCrop(

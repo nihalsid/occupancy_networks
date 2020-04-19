@@ -6,6 +6,7 @@ data:
   input_type: img
   train_split: train
   val_split: val
+  vis_split: val
   test_split: test
   dim: 3
   points_file: points.npz

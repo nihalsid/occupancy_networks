@@ -50,6 +50,7 @@ if not os.path.exists(out_dir):
 # Dataset
 train_dataset = config.get_dataset('train', cfg)
 val_dataset = config.get_dataset('val', cfg)
+vis_dataset = config.get_dataset('vis', cfg)
 
 train_loader = torch.utils.data.DataLoader(
     train_dataset, batch_size=batch_size, num_workers=4, shuffle=True,
@@ -64,7 +65,7 @@ val_loader = torch.utils.data.DataLoader(
 
 # For visualizations
 vis_loader = torch.utils.data.DataLoader(
-    val_dataset, batch_size=12, shuffle=True,
+    vis_dataset, batch_size=12, shuffle=True,
     collate_fn=data.collate_remove_none,
     worker_init_fn=data.worker_init_fn)
 data_vis = next(iter(vis_loader))

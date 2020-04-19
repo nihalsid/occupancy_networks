@@ -121,6 +121,15 @@ def get_prior_z(cfg, device, **kwargs):
     return p0_z
 
 
+def get_data_and_input_fields(mode, cfg):
+    fields = {'points': data.SDFPointField(num_samples=cfg['data']['points_subsample'], sigma=cfg['data']['sigma'])}
+
+    if mode in ('val', 'test'):
+        fields['points_iou'] = data.SDFPointField(num_samples=cfg['data']['points_subsample'], sigma=cfg['data']['sigma'])
+
+    return fields
+
+
 def get_data_fields(mode, cfg):
     ''' Returns the data fields.
 

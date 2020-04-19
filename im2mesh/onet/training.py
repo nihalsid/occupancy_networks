@@ -25,10 +25,13 @@ class Trainer(BaseTrainer):
     '''
 
     def __init__(self, model, optimizer, device=None, input_type='img',
-                 vis_dir=None, threshold=0.5, eval_sample=False):
+                 vis_dir=None, threshold=0.5, eval_sample=False, out_shape=(96, 96, 96)):
+        if out_shape is None:
+            out_shape = [32, 32, 32]
         self.model = model
         self.optimizer = optimizer
         self.device = device
+        self.out_shape = out_shape
         self.input_type = input_type
         self.vis_dir = vis_dir
         self.threshold = threshold
@@ -125,7 +128,7 @@ class Trainer(BaseTrainer):
         batch_size = data['points'].size(0)
         inputs = data.get('inputs', torch.empty(batch_size, 0)).to(device)
 
-        shape = (32, 32, 32)
+        shape = self.out_shape
         p = make_3d_grid([-0.5] * 3, [0.5] * 3, shape).to(device)
         p = p.expand(batch_size, *p.size())
 
@@ -137,11 +140,14 @@ class Trainer(BaseTrainer):
         voxels_out = (occ_hat >= self.threshold).cpu().numpy()
 
         for i in trange(batch_size):
-            input_img_path = os.path.join(self.vis_dir, '%03d_in.png' % i)
+            if self.input_type == 'img':
+                input_path = os.path.join(self.vis_dir, '%03d_in.png' % i)
+            else:
+                input_path = os.path.join(self.vis_dir, '%03d_in.obj' % i)
             vis.visualize_data(
-                inputs[i].cpu(), self.input_type, input_img_path)
-            vis.visualize_voxels(
-                voxels_out[i], os.path.join(self.vis_dir, '%03d.png' % i))
+                inputs[i].cpu(), self.input_type, input_path)
+            vis.visualize_voxels_as_point_cloud(
+                voxels_out[i], os.path.join(self.vis_dir, '%03d.obj' % i), flip_axis=True)
 
     def compute_loss(self, data):
         ''' Computes the loss.

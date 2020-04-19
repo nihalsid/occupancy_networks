@@ -15,6 +15,8 @@ from im2mesh.utils.libmesh import check_mesh_contains
 parser = argparse.ArgumentParser('Sample a watertight mesh.')
 parser.add_argument('in_folder', type=str,
                     help='Path to input watertight meshes.')
+parser.add_argument('--ext', type=str, default="off",
+                    help='Mesh extension')
 parser.add_argument('--n_proc', type=int, default=0,
                     help='Number of processes to use.')
 
@@ -63,15 +65,20 @@ parser.add_argument('--float16', action='store_true',
                     help='Whether to use half precision.')
 parser.add_argument('--packbits', action='store_true',
                 help='Whether to save truth values as bit array.')
+parser.add_argument('--fixed_bbox', action='store_true',
+                help='96x96x96 bbox')
+
     
 def main(args):
-    input_files = glob.glob(os.path.join(args.in_folder, '*.off'))
+    input_files = glob.glob(os.path.join(args.in_folder, '*.' + args.ext))
     if args.n_proc != 0:
         with Pool(args.n_proc) as p:
             p.map(partial(process_path, args=args), input_files)
     else:
         for p in input_files:
-            process_path(p, args)
+            if p.endswith("862f70e73fa70c9b1a719e2a845bdada__0__.obj"):
+                print(p)
+                process_path(p, args)
 
 
 def process_path(in_path, args):
@@ -89,6 +96,8 @@ def process_path(in_path, args):
             in_path_tmp = os.path.join(args.bbox_in_folder, modelname + '.off')
             mesh_tmp = trimesh.load(in_path_tmp, process=False)
             bbox = mesh_tmp.bounding_box.bounds
+        elif args.fixed_bbox:
+            bbox = np.array([[0, 0, 0], [96, 96, 96]], dtype=np.float32)
         else:
             bbox = mesh.bounding_box.bounds
 
@@ -166,10 +175,6 @@ def export_voxels(mesh, modelname, loc, scale, args):
 
 
 def export_points(mesh, modelname, loc, scale, args):
-    if not mesh.is_watertight:
-        print('Warning: mesh %s is not watertight!'
-              'Cannot sample points.' % modelname)
-        return
 
     filename = os.path.join(args.points_folder, modelname + '.npz')
 

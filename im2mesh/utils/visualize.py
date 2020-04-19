@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -19,12 +20,61 @@ def visualize_data(data, data_type, out_file):
         save_image(data, out_file, nrow=4)
     elif data_type == 'voxels':
         visualize_voxels(data, out_file=out_file)
+    elif data_type == 'sdf':
+        visualize_sdf(data, out_file=out_file)
     elif data_type == 'pointcloud':
         visualize_pointcloud(data, out_file=out_file)
     elif data_type is None or data_type == 'idx':
         pass
     else:
         raise ValueError('Invalid data_type "%s"' % data_type)
+
+
+def visualize_sdf(sdf, out_file=None, show=False):
+    voxels = np.array(np.abs(sdf) < 1)
+    visualize_voxels_as_point_cloud(voxels, out_file)
+
+
+def visualize_points(points, output_file, transform=None, colors=None):
+    verts = points if points.shape[1] == 3 else np.transpose(points)
+    if transform is not None:
+        x = np.ones((verts.shape[0], 4))
+        x[:, :3] = verts
+        x = np.matmul(transform, np.transpose(x))
+        x = np.transpose(x)
+        verts = np.divide(x[:, :3], x[:, 3, None])
+
+    ext = os.path.splitext(output_file)[1]
+    if ext == '.obj':
+        output_file = os.path.splitext(output_file)[0] + '.obj'
+        num_verts = len(verts)
+        with open(output_file, 'w') as f:
+            for i in range(num_verts):
+                v = verts[i]
+                if colors is None:
+                    f.write('v %f %f %f\n' % (v[0], v[1], v[2]))
+                else:
+                    f.write('v %f %f %f %f %f %f\n' % (v[0], v[1], v[2], int(colors[i, 0]), int(colors[i, 1]), int(colors[i, 2])))
+    else:
+        raise
+
+
+def visualize_voxels_as_point_cloud(voxels, out_file, flip_axis=False):
+    # collect verts from sdf
+    verts = []
+    for z in range(voxels.shape[0]):
+        for y in range(voxels.shape[1]):
+            for x in range(voxels.shape[2]):
+                if voxels[z, y, x] > 0.5:
+                    if flip_axis:
+                        verts.append(np.array([z, y, x]) + 0.5)  # center of voxel
+                    else:
+                        verts.append(np.array([x, y, z]) + 0.5)  # center of voxel
+    if len(verts) == 0:
+        # print('warning: no valid occ points for %s' % output_file)
+        return
+    verts = np.stack(verts)
+    visualize_points(verts, out_file)
 
 
 def visualize_voxels(voxels, out_file=None, show=False):

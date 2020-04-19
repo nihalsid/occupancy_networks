@@ -16,5 +16,6 @@ encoder_dict = {
     'pointnet_resnet': pointnet.ResnetPointnet,
     'psgn_cond': psgn_cond.PCGN_Cond,
     'voxel_simple': voxels.VoxelEncoder,
+    'voxel_deep': voxels.VoxelEncoderDeep,
     'pixel2mesh_cond': pix2mesh_cond.Pix2mesh_Cond,
 }
