@@ -70,20 +70,18 @@ parser.add_argument('--fixed_bbox', action='store_true',
 
     
 def main(args):
-    input_files = glob.glob(os.path.join(args.in_folder, '*.' + args.ext))
+    input_files = glob.glob(os.path.join(args.in_folder, "*"))
     if args.n_proc != 0:
         with Pool(args.n_proc) as p:
             p.map(partial(process_path, args=args), input_files)
     else:
         for p in input_files:
-            if p.endswith("862f70e73fa70c9b1a719e2a845bdada__0__.obj"):
-                print(p)
-                process_path(p, args)
+            process_path(p, args)
 
 
 def process_path(in_path, args):
-    in_file = os.path.basename(in_path)
-    modelname = os.path.splitext(in_file)[0]
+    modelname = os.path.basename(in_path)
+    in_path = os.path.join(in_path, "model_c.obj")
     mesh = trimesh.load(in_path, process=False)
 
     # Determine bounding box
