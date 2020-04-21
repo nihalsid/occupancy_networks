@@ -24,3 +24,6 @@ test:
   threshold: 0.2
   eval_mesh: true
   eval_pointcloud: false
+generation:
+  resolution_0: 96
+  upsampling_steps: 0

@@ -179,10 +179,11 @@ class Generator3D(object):
         # Strange behaviour in libmcubes: vertices are shifted by 0.5
         vertices -= 0.5
         # Undo padding
-        vertices -= 1
+        # vertices -= 1
+        # yawar: not normalizing for evaluation
         # Normalize to bounding box
-        vertices /= np.array([n_x-1, n_y-1, n_z-1])
-        vertices = box_size * (vertices - 0.5)
+        # vertices /= np.array([n_x-1, n_y-1, n_z-1])
+        # vertices = box_size * (vertices - 0.5)
 
         # mesh_pymesh = pymesh.form_mesh(vertices, triangles)
         # mesh_pymesh = fix_pymesh(mesh_pymesh)
