@@ -4,11 +4,11 @@ from im2mesh.data.core import (
 )
 from im2mesh.data.fields import (
     IndexField, CategoryField, ImagesField, PointsField,
-    VoxelsField, PointCloudField, MeshField, SDFPointField
+    VoxelsField, PointCloudField, MeshField, SDFPointField, ColoredPointCloudField
 )
 from im2mesh.data.transforms import (
     PointcloudNoise, SubsamplePointcloud,
-    SubsamplePoints
+    SubsamplePoints, SubsampleColoredPointcloud
 )
 from im2mesh.data.real import (
     KittiDataset, OnlineProductDataset,

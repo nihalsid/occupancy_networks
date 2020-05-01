@@ -77,6 +77,27 @@ def visualize_voxels_as_point_cloud(voxels, out_file, flip_axis=False):
     visualize_points(verts, out_file)
 
 
+def visualize_colored_voxels_as_point_cloud(voxels, colors, out_file, flip_axis=False):
+    # collect verts from sdf
+    verts = []
+    vc = []
+    for z in range(voxels.shape[0]):
+        for y in range(voxels.shape[1]):
+            for x in range(voxels.shape[2]):
+                if voxels[z, y, x] > 0.5:
+                    if flip_axis:
+                        verts.append(np.array([z, y, x]) + 0.5)  # center of voxel
+                    else:
+                        verts.append(np.array([x, y, z]) + 0.5)  # center of voxel
+                    vc.append(255 * (np.array([colors[0, z, y, x], colors[1, z, y, x], colors[2, z, y, x]]) * 0.5 + 0.5))
+    if len(verts) == 0:
+        # print('warning: no valid occ points for %s' % output_file)
+        return
+    verts = np.stack(verts)
+    vc = np.stack(vc)
+    visualize_points(verts, out_file, colors=vc)
+
+
 def visualize_voxels(voxels, out_file=None, show=False):
     r''' Visualizes voxel data.
 

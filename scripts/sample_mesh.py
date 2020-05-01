@@ -44,12 +44,14 @@ parser.add_argument('--voxels_res', type=int, default=32,
 
 parser.add_argument('--points_folder', type=str,
                     help='Output path for points.')
+parser.add_argument('--points_color_folder', type=str,
+                    help='Output path for points.')
 parser.add_argument('--points_size', type=int, default=100000,
                     help='Size of points.')
 parser.add_argument('--points_uniform_ratio', type=float, default=1.,
                     help='Ratio of points to sample uniformly'
                          'in bounding box.')
-parser.add_argument('--points_sigma', type=float, default=0.01,
+parser.add_argument('--points_sigma', type=float, default=0.02,
                     help='Standard deviation of gaussian noise added to points'
                          'samples on the surfaces.')
 parser.add_argument('--points_padding', type=float, default=0.1,
@@ -121,6 +123,9 @@ def process_path(in_path, args):
 
     if args.points_folder is not None:
         export_points(mesh, modelname, loc, scale, args)
+
+    if args.points_color_folder is not None:
+        export_points_color(mesh, modelname, loc, scale, args)
 
     if args.mesh_folder is not None:
         export_mesh(mesh, modelname, loc, scale, args)
@@ -205,6 +210,46 @@ def export_points(mesh, modelname, loc, scale, args):
 
     print('Writing points: %s' % filename)
     np.savez(filename, points=points, occupancies=occupancies,
+             loc=loc, scale=scale)
+
+
+def points_to_obj(points, colors, path):
+    with open(path, 'w') as f:
+        for i in range(points.shape[0]):
+            v = points[i, :]
+            c = colors[i, :]
+            if not (v[0]==0 and v[1]==0 and v[2]==0):
+                f.write('v %f %f %f %d %d %d\n' % (v[0], v[1], v[2], int(c[0]), int(c[1]), int(c[2])))
+
+
+def export_points_color(mesh, modelname, loc, scale, args, visualize=True):
+
+    filename = os.path.join(args.points_color_folder, modelname + '_color.npz')
+
+    if not args.overwrite and os.path.exists(filename):
+        print('Points already exist: %s' % filename)
+        return
+
+    boxsize = 1 + args.points_padding
+    points_surface, face_idx = mesh.sample(args.points_size, return_index=True)
+    normal_surface = mesh.face_normals[face_idx]
+    color_surface = mesh.visual.face_colors[face_idx]
+    points_surface += args.points_sigma * np.random.randn(args.points_size, 3)
+
+    if visualize:
+        points_to_obj((points_surface + 0.5) * 96, color_surface, os.path.join(args.points_color_folder, modelname + '_color.obj'))
+
+# Compress
+    if args.float16:
+        dtype = np.float16
+    else:
+        dtype = np.float32
+
+    points = points_surface.astype(dtype)
+    colors = color_surface.astype(dtype)
+
+    print('Writing points: %s' % filename)
+    np.savez(filename, points=points, colors=colors,
              loc=loc, scale=scale)
 
 

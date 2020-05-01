@@ -202,7 +202,8 @@ class SDFPointField(Field):
         in_sdf, in_colors, tgt_sdf, tgt_colors = self.load_sdf_colors_file(os.path.join(os.path.split(model_path)[0], "sdf", os.path.split(model_path)[1]))
 
         data = {
-            None: in_sdf
+            None: in_sdf,
+            'colors': 2 * np.transpose(in_colors, (3, 0, 1, 2)) / 255 - 1
         }
 
         if self.transform is not None:
@@ -378,6 +379,62 @@ class PointCloudField(Field):
         complete = (self.file_name in files)
         return complete
 
+
+class ColoredPointCloudField(Field):
+    ''' Colored Point cloud field.
+
+    It provides the field used for point cloud data. These are the points
+    randomly sampled on the mesh.
+
+    Args:
+        file_name (str): file name
+        transform (list): list of transformations applied to data points
+        with_transforms (bool): whether scaling and rotation dat should be
+            provided
+    '''
+
+    def __init__(self, file_name, transform=None, with_transforms=False):
+        self.file_name = file_name
+        self.transform = transform
+        self.with_transforms = with_transforms
+
+    def load(self, model_path, idx, category):
+        ''' Loads the data point.
+
+        Args:
+            model_path (str): path to model
+            idx (int): ID of data point
+            category (int): index of category
+        '''
+        file_path = os.path.join(model_path, self.file_name)
+
+        pointcloud_dict = np.load(file_path)
+
+        points = pointcloud_dict['points'].astype(np.float32)
+        colors = 2 * pointcloud_dict['colors'].astype(np.float32) / 255 - 1
+
+        data = {
+            None: points,
+            'colors': colors,
+        }
+
+        if self.with_transforms:
+            data['loc'] = pointcloud_dict['loc'].astype(np.float32)
+            data['scale'] = pointcloud_dict['scale'].astype(np.float32)
+
+        if self.transform is not None:
+            data = self.transform(data)
+
+        return data
+
+    def check_complete(self, files):
+        ''' Check if field is complete.
+
+        Args:
+            files: files
+        '''
+        complete = (self.file_name in files)
+        return complete
 
 # NOTE: this will produce variable length output.
 # You need to specify collate_fn to make it work with a data laoder

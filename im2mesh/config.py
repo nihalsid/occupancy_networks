@@ -1,12 +1,13 @@
 import yaml
 from torchvision import transforms
 from im2mesh import data
-from im2mesh import onet, r2n2, psgn, pix2mesh, dmc
+from im2mesh import onet, r2n2, psgn, pix2mesh, dmc, onet_color
 from im2mesh import preprocess
 
 
 method_dict = {
     'onet': onet,
+    'onet_color': onet_color,
     'r2n2': r2n2,
     'psgn': psgn,
     'pix2mesh': pix2mesh,
