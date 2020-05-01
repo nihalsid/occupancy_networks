@@ -13,7 +13,7 @@ model:
   encoder: voxel_deep
   c_dim: 256
   z_dim: 0
-  encoder_geo_weights: /media/nihalsid/OSDisk/Users/ga83fiz/nihalsid/occupancy_networks/out/saved/onet_sdf.pt
+  encoder_geo_weights: /home/yawar/occupancy_networks/out/sdf/onet/model_best.pt
 training:
   out_dir:  out/sdf/onet_color
   batch_size: 2
