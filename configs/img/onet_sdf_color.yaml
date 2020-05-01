@@ -19,8 +19,8 @@ training:
   batch_size: 2
   model_selection_metric: l1_color
   model_selection_mode: minimize
-  visualize_every: 5000
-  validate_every: 5000
+  visualize_every: 2500
+  validate_every: 20000
 test:
   threshold: 0.2
   eval_mesh: true
