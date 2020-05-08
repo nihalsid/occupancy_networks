@@ -10,6 +10,7 @@ from functools import partial
 sys.path.append('..')
 from im2mesh.utils import binvox_rw, voxels
 from im2mesh.utils.libmesh import check_mesh_contains
+from tqdm import tqdm
 
 
 parser = argparse.ArgumentParser('Sample a watertight mesh.')
@@ -77,7 +78,7 @@ def main(args):
         with Pool(args.n_proc) as p:
             p.map(partial(process_path, args=args), input_files)
     else:
-        for p in input_files:
+        for p in tqdm(input_files):
             process_path(p, args)
 
 
@@ -222,7 +223,7 @@ def points_to_obj(points, colors, path):
                 f.write('v %f %f %f %d %d %d\n' % (v[0], v[1], v[2], int(c[0]), int(c[1]), int(c[2])))
 
 
-def export_points_color(mesh, modelname, loc, scale, args, visualize=True):
+def export_points_color(mesh, modelname, loc, scale, args, visualize=False):
 
     filename = os.path.join(args.points_color_folder, modelname + '_color.npz')
 
