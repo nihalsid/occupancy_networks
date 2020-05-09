@@ -25,13 +25,12 @@ class Trainer(BaseTrainer):
     '''
 
     def __init__(self, model, optimizer, device=None, input_type='img',
-                 vis_dir=None, threshold=0.5, eval_sample=False, out_shape=(96, 96, 96)):
-        if out_shape is None:
-            out_shape = [32, 32, 32]
+                 vis_dir=None, threshold=0.5, eval_sample=False, scale=96, loc=(48, 48, 48)):
         self.model = model
         self.optimizer = optimizer
         self.device = device
-        self.out_shape = out_shape
+        self.scale = scale
+        self.loc = loc
         self.input_type = input_type
         self.vis_dir = vis_dir
         self.threshold = threshold
@@ -128,8 +127,10 @@ class Trainer(BaseTrainer):
         batch_size = data['points'].size(0)
         inputs = data.get('inputs', torch.empty(batch_size, 0)).to(device)
 
-        shape = self.out_shape
-        p = make_3d_grid([-0.5] * 3, [0.5] * 3, shape).to(device)
+        _min = [-x / self.scale for x in self.loc]
+        _max = [x / self.scale for x in self.loc]
+        shape = [x * 2 for x in self.loc]
+        p = make_3d_grid(_min, _max, shape).to(device)
         p = p.expand(batch_size, *p.size())
 
         kwargs = {}

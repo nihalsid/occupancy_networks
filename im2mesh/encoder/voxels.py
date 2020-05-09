@@ -11,10 +11,10 @@ class VoxelEncoderDeep(nn.Module):
             c_dim (int): output dimension
         '''
 
-    def __init__(self, dim=3, c_dim=128):
+    def __init__(self, dim=3, c_dim=128, z=96):
         super().__init__()
         self.actvn = F.relu
-
+        self.last_dim = 3 if z == 96 else 5
         self.conv_in = nn.Conv3d(1, 32, 3, padding=1)
 
         self.conv_0 = nn.Conv3d(32, 64, 3, padding=1, stride=2)
@@ -22,7 +22,7 @@ class VoxelEncoderDeep(nn.Module):
         self.conv_2 = nn.Conv3d(128, 256, 3, padding=1, stride=2)
         self.conv_3 = nn.Conv3d(256, 512, 3, padding=1, stride=2)
         self.conv_4 = nn.Conv3d(512, 512, 3, padding=1, stride=2)
-        self.fc = nn.Linear(512 * 3 * 3 * 3, c_dim)
+        self.fc = nn.Linear(512 * 3 * 3 * self.last_dim, c_dim)
 
     def forward(self, x):
         batch_size = x.size(0)
@@ -35,7 +35,7 @@ class VoxelEncoderDeep(nn.Module):
         net = self.conv_3(self.actvn(net))
         net = self.conv_4(self.actvn(net))
 
-        hidden = net.view(batch_size, 512 * 3 * 3 * 3)
+        hidden = net.view(batch_size, 512 * 3 * 3 * self.last_dim)
         c = self.fc(self.actvn(hidden))
 
         return c

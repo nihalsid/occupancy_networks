@@ -76,6 +76,8 @@ def get_trainer(model, optimizer, cfg, device, **kwargs):
         device=device, input_type=input_type,
         vis_dir=vis_dir, threshold=threshold,
         eval_sample=cfg['training']['eval_sample'],
+        loc=cfg['data']['loc'],
+        scale=cfg['data']['scale'],
     )
 
     return trainer

@@ -191,6 +191,8 @@ def get_inputs_field(mode, cfg):
 
     elif input_type == 'sdf':
         inputs_field = data.SDFPointField()
+    elif input_type == 'sdfm':
+        inputs_field = data.SDFPointField(mode='matterport')
 
     elif input_type == 'img':
         if mode == 'train' and cfg['data']['img_augment']:

@@ -98,7 +98,7 @@ def process_path(in_path, args):
             mesh_tmp = trimesh.load(in_path_tmp, process=False)
             bbox = mesh_tmp.bounding_box.bounds
         elif args.fixed_bbox:
-            bbox = np.array([[0, 0, 0], [96, 96, 96]], dtype=np.float32)
+            bbox = np.array([[0, 0, 0], [96, 96, 160]], dtype=np.float32)
         else:
             bbox = mesh.bounding_box.bounds
 
@@ -186,17 +186,20 @@ def export_points(mesh, modelname, loc, scale, args):
         print('Points already exist: %s' % filename)
         return
 
-    n_points_uniform = int(args.points_size * args.points_uniform_ratio)
-    n_points_surface = args.points_size - n_points_uniform
+    n_points_surface_true = int(args.points_size * (1 - args.points_uniform_ratio))
+    n_points_surface = int(args.points_size * (1 - args.points_uniform_ratio))
+    n_points_uniform = args.points_size - (n_points_surface + n_points_surface_true)
 
     boxsize = 1 + args.points_padding
     points_uniform = np.random.rand(n_points_uniform, 3)
     points_uniform = boxsize * (points_uniform - 0.5)
     points_surface = mesh.sample(n_points_surface)
     points_surface += args.points_sigma * np.random.randn(n_points_surface, 3)
-    points = np.concatenate([points_uniform, points_surface], axis=0)
+    points_surface_true = mesh.sample(n_points_surface_true)
+    points = np.concatenate([points_uniform, points_surface, points_surface_true], axis=0)
 
     occupancies = check_mesh_contains(mesh, points)
+    occupancies[points_uniform.shape[0] + points_surface.shape[0]:] = 1
 
     # Compress
     if args.float16:

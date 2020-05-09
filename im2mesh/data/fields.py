@@ -1,4 +1,5 @@
 import os
+import struct
 import glob
 import random
 from PIL import Image
@@ -115,6 +116,45 @@ class ImagesField(Field):
         return complete
 
 
+def load_sdf_color_file_mp(model_path):
+    trunc = 3.
+    root, file_path = os.path.split(model_path)
+    file_path = file_path.split("_")[0] + "_" + file_path.split("_")[1] + "__inc__" + file_path.split("_")[2] + ".sdf"
+    fin = open(os.path.join(root, file_path), 'rb')
+    dimx = struct.unpack('Q', fin.read(8))[0]
+    dimy = struct.unpack('Q', fin.read(8))[0]
+    dimz = struct.unpack('Q', fin.read(8))[0]
+    voxelsize = struct.unpack('f', fin.read(4))[0]
+    world2grid = struct.unpack('f' * 4 * 4, fin.read(4 * 4 * 4))
+    # input data
+    num = struct.unpack('Q', fin.read(8))[0]
+    input_locs = struct.unpack('I' * num * 3, fin.read(num * 3 * 4))
+    input_locs = np.asarray(input_locs, dtype=np.int32).reshape([num, 3])
+    input_locs = np.flip(input_locs, 1).copy()  # convert to zyx ordering
+    input_sdfs = struct.unpack('f' * num, fin.read(num * 4))
+    input_sdfs = np.asarray(input_sdfs, dtype=np.float32)
+    input_sdfs /= voxelsize
+    input_sdfs_dense = sparse_to_dense_np(input_locs, input_sdfs[:, np.newaxis], dimx, dimy, dimz, trunc)
+    return input_sdfs_dense, None, None, None
+
+
+def load_sdf_colors_file_sn(model_path):
+    trunc = 3.
+    npzfile = np.load(model_path + ".npz")
+    in_sdf, in_colors, tgt_sdf, tgt_colors = npzfile['in_sdf'], npzfile['in_colors'], npzfile['tgt_sdf'], npzfile['tgt_colors']
+    mask_in_gt, mask_in_lt = np.greater(in_sdf, trunc), np.less(in_sdf, -trunc)
+    in_sdf[mask_in_gt] = trunc
+    in_colors[mask_in_gt] = 0
+    in_sdf[mask_in_lt] = -trunc
+    in_colors[mask_in_lt] = 0
+    mask_tgt_gt, mask_tgt_lt = np.greater(tgt_sdf, trunc), np.less(tgt_sdf, -trunc)
+    tgt_sdf[mask_tgt_gt] = trunc
+    tgt_colors[mask_tgt_gt] = 0
+    tgt_sdf[mask_tgt_lt] = -trunc
+    tgt_colors[mask_tgt_lt] = 0
+    return in_sdf, in_colors, tgt_sdf, tgt_colors,
+
+
 class SDFPointField(Field):
     ''' SDF Field.
 
@@ -125,28 +165,13 @@ class SDFPointField(Field):
         transform (list): list of transformations applied to loaded sdfs
     '''
 
-    def __init__(self, num_samples=2048, sigma=5.0, transform=None, B_MIN=0, B_MAX=96):
+    def __init__(self, num_samples=2048, sigma=5.0, transform=None, B_MIN=0, B_MAX=96, mode='shapenet'):
         self.transform = transform
         self.B_MAX = B_MAX
         self.B_MIN = B_MIN
         self.sigma = sigma
         self.num_samples = num_samples
-
-    def load_sdf_colors_file(self, model_path):
-        trunc = 3.
-        npzfile = np.load(model_path + ".npz")
-        in_sdf, in_colors, tgt_sdf, tgt_colors = npzfile['in_sdf'], npzfile['in_colors'], npzfile['tgt_sdf'], npzfile['tgt_colors']
-        mask_in_gt, mask_in_lt = np.greater(in_sdf, trunc), np.less(in_sdf, -trunc)
-        in_sdf[mask_in_gt] = trunc
-        in_colors[mask_in_gt] = 0
-        in_sdf[mask_in_lt] = -trunc
-        in_colors[mask_in_lt] = 0
-        mask_tgt_gt, mask_tgt_lt = np.greater(tgt_sdf, trunc), np.less(tgt_sdf, -trunc)
-        tgt_sdf[mask_tgt_gt] = trunc
-        tgt_colors[mask_tgt_gt] = 0
-        tgt_sdf[mask_tgt_lt] = -trunc
-        tgt_colors[mask_tgt_lt] = 0
-        return in_sdf, in_colors, tgt_sdf, tgt_colors,
+        self.load_sdf_color_file = load_sdf_colors_file_sn if mode == 'shapenet' else load_sdf_color_file_mp
 
     def do_sampling_from_sdf(self, in_sdf, tgt_sdf):
         surface_points_tgt = np.array(np.where(np.abs(tgt_sdf) < 1.0))
@@ -198,13 +223,17 @@ class SDFPointField(Field):
             idx (int): ID of data point
             category (int): index of category
         '''
+        in_sdf, in_colors, tgt_sdf, tgt_colors = self.load_sdf_color_file(os.path.join(os.path.split(model_path)[0], "sdf", os.path.split(model_path)[1]))
 
-        in_sdf, in_colors, tgt_sdf, tgt_colors = self.load_sdf_colors_file(os.path.join(os.path.split(model_path)[0], "sdf", os.path.split(model_path)[1]))
-
-        data = {
-            None: in_sdf,
-            'colors': 2 * np.transpose(in_colors, (3, 0, 1, 2)) / 255 - 1
-        }
+        if in_colors is None:
+            data = {
+                None: in_sdf
+            }
+        else:
+            data = {
+                None: in_sdf,
+                'colors': 2 * np.transpose(in_colors, (3, 0, 1, 2)) / 255 - 1
+            }
 
         if self.transform is not None:
             data = self.transform(data)
@@ -482,3 +511,13 @@ class MeshField(Field):
         '''
         complete = (self.file_name in files)
         return complete
+
+
+def sparse_to_dense_np(locs, values, dimx, dimy, dimz, default_val):
+    nf_values = 1 if len(values.shape) == 1 else values.shape[1]
+    dense = np.zeros([dimz, dimy, dimx, nf_values], dtype=values.dtype)
+    dense.fill(default_val)
+    dense[locs[:, 0], locs[:, 1], locs[:, 2], :] = values
+    if nf_values > 1:
+        return dense.reshape([dimz, dimy, dimx, nf_values])
+    return dense.reshape([dimz, dimy, dimx])

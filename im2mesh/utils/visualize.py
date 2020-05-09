@@ -20,7 +20,7 @@ def visualize_data(data, data_type, out_file):
         save_image(data, out_file, nrow=4)
     elif data_type == 'voxels':
         visualize_voxels(data, out_file=out_file)
-    elif data_type == 'sdf':
+    elif data_type.startswith('sdf'):
         visualize_sdf(data, out_file=out_file)
     elif data_type == 'pointcloud':
         visualize_pointcloud(data, out_file=out_file)
