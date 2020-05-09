@@ -116,7 +116,7 @@ class Trainer(BaseTrainer):
 
         return eval_dict
 
-    def visualize(self, data):
+    def visualize(self, data, it_idx):
         ''' Performs a visualization step for the data.
 
         Args:
@@ -142,13 +142,13 @@ class Trainer(BaseTrainer):
 
         for i in trange(batch_size):
             if self.input_type == 'img':
-                input_path = os.path.join(self.vis_dir, '%03d_in.png' % i)
+                input_path = os.path.join(self.vis_dir, '%08d_%03d_in.png' % (it_idx, i))
             else:
-                input_path = os.path.join(self.vis_dir, '%03d_in.obj' % i)
+                input_path = os.path.join(self.vis_dir, '%08d_%03d_in.obj' % (it_idx, i))
             vis.visualize_data(
                 inputs[i].cpu(), self.input_type, input_path)
             vis.visualize_voxels_as_point_cloud(
-                voxels_out[i], os.path.join(self.vis_dir, '%03d.obj' % i), flip_axis=True)
+                voxels_out[i], os.path.join(self.vis_dir, '%08d_%03d.obj' % (it_idx, i)), flip_axis=True)
 
     def compute_loss(self, data):
         ''' Computes the loss.

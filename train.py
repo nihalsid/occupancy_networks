@@ -58,14 +58,14 @@ train_loader = torch.utils.data.DataLoader(
     worker_init_fn=data.worker_init_fn)
 
 val_loader = torch.utils.data.DataLoader(
-    val_dataset, batch_size=2, num_workers=4, shuffle=False,
+    val_dataset, batch_size=batch_size, num_workers=4, shuffle=False,
     collate_fn=data.collate_remove_none,
     worker_init_fn=data.worker_init_fn)
 
 
 # For visualizations
 vis_loader = torch.utils.data.DataLoader(
-    vis_dataset, batch_size=12, shuffle=True,
+    vis_dataset, batch_size=1, shuffle=True,
     collate_fn=data.collate_remove_none,
     worker_init_fn=data.worker_init_fn)
 data_vis = next(iter(vis_loader))
@@ -133,7 +133,8 @@ while True:
         # Visualize output
         if visualize_every > 0 and (it % visualize_every) == 0:
             print('Visualizing')
-            trainer.visualize(data_vis)
+            trainer.visualize(data_vis, it)
+            data_vis = next(iter(vis_loader))
 
         # Save checkpoint
         if (checkpoint_every > 0 and (it % checkpoint_every) == 0):
